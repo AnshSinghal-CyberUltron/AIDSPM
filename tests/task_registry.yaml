@@ -1,0 +1,69 @@
+schema_version: "1.0.0"
+product: AI DSPM
+notes:
+  - T03 implements make verify. Until then, a missing command is unverified, not passed.
+  - Zero collected tests must never be treated as a pass.
+  - Required skips fail the task.
+
+tasks:
+  T01:
+    title: Freeze the first product contract
+    phase: P0
+    status: Planned
+    prerequisites: []
+    profiles: []
+    frontend: not_applicable
+    tests:
+      availability: unavailable_until_T03
+      selectors: []
+    required_files:
+      - docs/scope.json
+      - docs/capabilities/mvp.md
+      - docs/adr/0001-boundaries.md
+  T02:
+    title: Create the repository and lock the toolchain
+    phase: P0
+    status: Planned
+    prerequisites: [T01]
+    frontend: not_applicable
+  T03:
+    title: Implement the task verification and evidence harness
+    phase: P0
+    status: Planned
+    prerequisites: [T02]
+    frontend: not_applicable
+  T04:
+    title: Boot the first live API database and frontend
+    phase: P0
+    status: Planned
+    prerequisites: [T03]
+  T05:
+    title: Build the catalog schema and tenant isolation
+    phase: P0
+    status: Planned
+    prerequisites: [T04]
+  T06:
+    title: Add real login sessions and role checks
+    phase: P0
+    status: Planned
+    prerequisites: [T05]
+  T07:
+    title: Generate the golden data and independent expected results
+    phase: P0
+    status: Planned
+    prerequisites: [T06]
+  T08:
+    title: Establish privacy secrets and audit foundations
+    phase: P0
+    status: Planned
+    prerequisites: [T07]
+  T18:
+    title: Verify the read only posture MVP release
+    phase: P1
+    status: Planned
+    prerequisites: [T17]
+  T26:
+    title: Verify the protected RAG MVP release
+    phase: P2
+    status: Planned
+    prerequisites: [T25]
