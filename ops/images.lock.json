@@ -1,0 +1,57 @@
+{
+    "recorded_at_utc": "2026-09-17T05:55:00Z",
+    "note": "Pin by digest. Never use :latest. linux/amd64 and linux/arm64 are not binary-identical.",
+    "images": {
+      "python": {
+        "name": "python",
+        "tag": "3.12-slim-bookworm",
+        "runtime_version": "Python 3.12.14",
+        "index_digest": "sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254",
+        "platforms": {
+          "linux/amd64": "sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef",
+          "linux/arm64": "sha256:d04f49f5882f49a3b91f874e75e19f0c265f7222da8659741a9d7eab148f22a9"
+        }
+      },
+      "node": {
+        "name": "node",
+        "tag": "24-bookworm-slim",
+        "runtime_version": "v24.21.0",
+        "index_digest": "sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553",
+        "platforms": {
+          "linux/amd64": "sha256:713cfbf4a0ac19f40e1bb9919893e126b74a5c8cf5d0623c9f89515c8f74c6fa",
+          "linux/arm64": "sha256:8d1405ad7696efa6941cb7745c2aa51d02549b900e4a40fdf212a1b5115dd1b9"
+        }
+      },
+      "postgres": {
+        "name": "postgres",
+        "tag": "18-bookworm",
+        "runtime_version": "PostgreSQL 18.6",
+        "used_from_task": "T04",
+        "index_digest": "sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af",
+        "platforms": {
+          "linux/amd64": "sha256:a10c981235b4f635e65df0cfb66a5598064628128505dbc6a3ed4ca303717521",
+          "linux/arm64": "sha256:4d155aa3f2c2cc1838bb70e81396f76373ec7275ec9ce9cf32873cd677c9a992"
+        }
+      },
+      "pgvector": {
+        "name": "pgvector/pgvector",
+        "tag": "pg18-bookworm",
+        "used_from_task": "T19",
+        "index_digest": "sha256:2ba9ca5f2e7daa0f0e7723cba1ee9167bab54efd3640516a44ac1a928dd67e7a",
+        "platforms": {
+          "linux/amd64": "sha256:1d50c689b0a6511b9ea0a15615281c81a59fd04a08eb35057ec8646fb3a2118a",
+          "linux/arm64": "sha256:46481fb03d04f9160a2373d305f769eb34040fc866e7bd74b8f5b84a50cc2952"
+        }
+      },
+      "keycloak": {
+        "name": "quay.io/keycloak/keycloak",
+        "tag": "26.3",
+        "used_from_task": "T06",
+        "index_digest": "sha256:357829ec7c4693397533035092ad13b0644bcc95ded311f33a3738c4d9e9bdba",
+        "platforms": {
+          "linux/amd64": "sha256:e5e169f6ef82b06d2f5b08e9ac80e6a6335900360f0767e04d6810a9b4bc3590",
+          "linux/arm64": "sha256:f40c526f2fcd7dd7200a00ec21dd218fb048588b23735601b3b82e2c2a98e788"
+        }
+      }
+    }
+  }

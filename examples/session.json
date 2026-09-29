@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "user_id": "13f26767-f317-4baf-8570-72ccf975d7b8",
+  "selected_tenant_id": "943d84da-0714-44c7-ac98-6107425040d3",
+  "display_name": "Synthetic Analyst",
+  "roles": ["analyst"],
+  "permissions": ["sources:read", "scans:create", "assets:read", "findings:read", "findings:triage"],
+  "expires_at": "2026-09-29T05:00:00Z"
+}
+

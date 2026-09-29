@@ -1,0 +1,1 @@
+# No test functions on purpose. Collection must be empty.

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "296491ee-a734-4ea8-bad2-4c6928534dd3",
+  "source_id": "8a52dbbe-1a4d-4a16-a420-5a814acac187",
+  "type": "file",
+  "lifecycle": "active",
+  "display_name_masked": "payroll-***.csv",
+  "current_version_id": "cc5efad5-fec7-431d-b3c9-7b10825979dd",
+  "first_seen_at": "2026-09-29T04:00:00Z",
+  "last_seen_at": "2026-09-29T04:00:15Z",
+  "classifications": [
+    {
+      "label": "regulated",
+      "detector_version": "ruleset-1",
+      "detector_score": 0.9,
+      "evidence_id": "4d2db4c7-f06b-49a5-8cd7-b0e54d0506a2"
+    }
+  ],
+  "coverage": {
+    "state": "complete",
+    "enumeration_complete": true,
+    "inspection_complete": true,
+    "eligible": 3,
+    "inspected": 3,
+    "failed": 0,
+    "unsupported": 0,
+    "last_successful_scan_at": "2026-09-29T04:00:15Z",
+    "limitations": ["Complete for the approved fixture scope and supported formats only"]
+  }
+}
+

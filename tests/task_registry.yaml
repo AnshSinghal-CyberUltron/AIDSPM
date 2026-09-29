@@ -1,69 +1,377 @@
 schema_version: "1.0.0"
 product: AI DSPM
+cli:
+  check_flag: CHECK
+  phase_flag: PHASE
+exit_codes:
+  pass: 0
+  fail: 1
+  unimplemented_or_empty: 2
+  missing_evidence_or_credential: 3
 notes:
-  - T03 implements make verify. Until then, a missing command is unverified, not passed.
   - Zero collected tests must never be treated as a pass.
-  - Required skips fail the task.
+  - Required skips fail the check.
+  - Browser flows are not_applicable until first-live-stack.
+  - spec_id is a cross-walk to docs/AI_DSPM_Implementation_Plan_and_Tasks.md only.
 
-tasks:
-  T01:
-    title: Freeze the first product contract
-    phase: P0
-    status: Planned
+checks:
+  product-contract:
+    spec_id: T01
+    phase: foundations
+    status: runnable
     prerequisites: []
-    profiles: []
     frontend: not_applicable
-    tests:
-      availability: unavailable_until_T03
-      selectors: []
+    profiles: []
+    pytest_selectors: []
     required_files:
       - docs/scope.json
       - docs/capabilities/mvp.md
       - docs/adr/0001-boundaries.md
-  T02:
-    title: Create the repository and lock the toolchain
-    phase: P0
-    status: Planned
-    prerequisites: [T01]
+    command: python scripts/verify.py --internal product-contract
+
+  toolchain:
+    spec_id: T02
+    phase: foundations
+    status: runnable
+    prerequisites: [product-contract]
     frontend: not_applicable
-  T03:
-    title: Implement the task verification and evidence harness
-    phase: P0
-    status: Planned
-    prerequisites: [T02]
+    profiles: []
+    pytest_selectors: []
+    required_files:
+      - pyproject.toml
+      - uv.lock
+      - apps/web/package.json
+      - pnpm-lock.yaml
+      - ops/images.lock.json
+      - Makefile
+    command: make doctor && make build
+
+  verify-harness:
+    spec_id: T03
+    phase: foundations
+    status: runnable
+    prerequisites: [toolchain]
     frontend: not_applicable
-  T04:
-    title: Boot the first live API database and frontend
-    phase: P0
-    status: Planned
-    prerequisites: [T03]
-  T05:
-    title: Build the catalog schema and tenant isolation
-    phase: P0
-    status: Planned
-    prerequisites: [T04]
-  T06:
-    title: Add real login sessions and role checks
-    phase: P0
-    status: Planned
-    prerequisites: [T05]
-  T07:
-    title: Generate the golden data and independent expected results
-    phase: P0
-    status: Planned
-    prerequisites: [T06]
-  T08:
-    title: Establish privacy secrets and audit foundations
-    phase: P0
-    status: Planned
-    prerequisites: [T07]
-  T18:
-    title: Verify the read only posture MVP release
-    phase: P1
-    status: Planned
-    prerequisites: [T17]
-  T26:
-    title: Verify the protected RAG MVP release
-    phase: P2
-    status: Planned
-    prerequisites: [T25]
+    profiles: []
+    pytest_selectors:
+      - tests/harness
+    required_files:
+      - scripts/verify.py
+      - scripts/evidence.py
+      - tests/task_registry.yaml
+      - tests/conftest.py
+
+  first-live-stack:
+    spec_id: T04
+    phase: foundations
+    status: unimplemented
+    prerequisites: [verify-harness]
+    frontend: required_later
+  catalog-tenant-isolation:
+    spec_id: T05
+    phase: foundations
+    status: unimplemented
+    prerequisites: [first-live-stack]
+  login-sessions:
+    spec_id: T06
+    phase: foundations
+    status: unimplemented
+    prerequisites: [catalog-tenant-isolation]
+  golden-dataset:
+    spec_id: T07
+    phase: foundations
+    status: unimplemented
+    prerequisites: [login-sessions]
+  privacy-audit:
+    spec_id: T08
+    phase: foundations
+    status: unimplemented
+    prerequisites: [golden-dataset]
+  connector-contract:
+    spec_id: T09
+    phase: read-only-posture
+    status: unimplemented
+    prerequisites: [privacy-audit]
+  readonly-discovery:
+    spec_id: T10
+    phase: read-only-posture
+    status: unimplemented
+    prerequisites: [connector-contract]
+  bounded-extraction:
+    spec_id: T11
+    phase: read-only-posture
+    status: unimplemented
+    prerequisites: [readonly-discovery]
+  classification-rules:
+    spec_id: T12
+    phase: read-only-posture
+    status: unimplemented
+    prerequisites: [bounded-extraction]
+  local-entity-recognition:
+    spec_id: T13
+    phase: read-only-posture
+    status: unimplemented
+    prerequisites: [classification-rules]
+  durable-scans:
+    spec_id: T14
+    phase: read-only-posture
+    status: unimplemented
+    prerequisites: [local-entity-recognition]
+  version-reconciliation:
+    spec_id: T15
+    phase: read-only-posture
+    status: unimplemented
+    prerequisites: [durable-scans]
+  findings-risk:
+    spec_id: T16
+    phase: read-only-posture
+    status: unimplemented
+    prerequisites: [version-reconciliation]
+  posture-console:
+    spec_id: T17
+    phase: read-only-posture
+    status: unimplemented
+    prerequisites: [findings-risk]
+  readonly-posture-gate:
+    spec_id: T18
+    phase: read-only-posture
+    status: unimplemented
+    prerequisites: [posture-console]
+  rag-source:
+    spec_id: T19
+    phase: protected-rag
+    status: unimplemented
+    prerequisites: [readonly-posture-gate]
+  source-permissions:
+    spec_id: T20
+    phase: protected-rag
+    status: unimplemented
+    prerequisites: [rag-source]
+  chunk-provenance:
+    spec_id: T21
+    phase: protected-rag
+    status: unimplemented
+    prerequisites: [source-permissions]
+  retrieval-authorization:
+    spec_id: T22
+    phase: protected-rag
+    status: unimplemented
+    prerequisites: [chunk-provenance]
+  enforce-retrieval:
+    spec_id: T23
+    phase: protected-rag
+    status: unimplemented
+    prerequisites: [retrieval-authorization]
+  revocation-freshness:
+    spec_id: T24
+    phase: protected-rag
+    status: unimplemented
+    prerequisites: [enforce-retrieval]
+  rag-explanations:
+    spec_id: T25
+    phase: protected-rag
+    status: unimplemented
+    prerequisites: [revocation-freshness]
+  protected-rag-gate:
+    spec_id: T26
+    phase: protected-rag
+    status: unimplemented
+    prerequisites: [rag-explanations]
+  runtime-policies:
+    spec_id: T27
+    phase: runtime-protection
+    status: unimplemented
+    prerequisites: [protected-rag-gate]
+  outbound-inspection:
+    spec_id: T28
+    phase: runtime-protection
+    status: unimplemented
+    prerequisites: [runtime-policies]
+  masking-redaction:
+    spec_id: T29
+    phase: runtime-protection
+    status: unimplemented
+    prerequisites: [outbound-inspection]
+  response-streaming:
+    spec_id: T30
+    phase: runtime-protection
+    status: unimplemented
+    prerequisites: [masking-redaction]
+  runtime-events:
+    spec_id: T31
+    phase: runtime-protection
+    status: unimplemented
+    prerequisites: [response-streaming]
+  injection-evasion:
+    spec_id: T32
+    phase: runtime-protection
+    status: unimplemented
+    prerequisites: [runtime-events]
+  forced-protected-path:
+    spec_id: T33
+    phase: runtime-protection
+    status: unimplemented
+    prerequisites: [injection-evasion]
+  runtime-protection-gate:
+    spec_id: T34
+    phase: runtime-protection
+    status: unimplemented
+    prerequisites: [forced-protected-path]
+  agent-inventory:
+    spec_id: T35
+    phase: agent-mcp
+    status: unimplemented
+    prerequisites: [runtime-protection-gate]
+  mcp-onboarding:
+    spec_id: T36
+    phase: agent-mcp
+    status: unimplemented
+    prerequisites: [agent-inventory]
+  mcp-authorization:
+    spec_id: T37
+    phase: agent-mcp
+    status: unimplemented
+    prerequisites: [mcp-onboarding]
+  tool-argument-authz:
+    spec_id: T38
+    phase: agent-mcp
+    status: unimplemented
+    prerequisites: [mcp-authorization]
+  tool-result-inspection:
+    spec_id: T39
+    phase: agent-mcp
+    status: unimplemented
+    prerequisites: [tool-argument-authz]
+  human-approval:
+    spec_id: T40
+    phase: agent-mcp
+    status: unimplemented
+    prerequisites: [tool-result-inspection]
+  agent-overprivilege:
+    spec_id: T41
+    phase: agent-mcp
+    status: unimplemented
+    prerequisites: [human-approval]
+  agent-mcp-gate:
+    spec_id: T42
+    phase: agent-mcp
+    status: unimplemented
+    prerequisites: [agent-overprivilege]
+  s3-inventory:
+    spec_id: T43
+    phase: connectors
+    status: unimplemented
+    prerequisites: [agent-mcp-gate]
+  aws-access-evidence:
+    spec_id: T44
+    phase: connectors
+    status: unimplemented
+    prerequisites: [s3-inventory]
+  postgres-source-scanning:
+    spec_id: T45
+    phase: connectors
+    status: unimplemented
+    prerequisites: [aws-access-evidence]
+  qdrant-lineage:
+    spec_id: T46
+    phase: connectors
+    status: unimplemented
+    prerequisites: [postgres-source-scanning]
+  sharepoint-onedrive:
+    spec_id: T47
+    phase: connectors
+    status: unimplemented
+    prerequisites: [qdrant-lineage]
+  copilot-audit:
+    spec_id: T48
+    phase: connectors
+    status: unimplemented
+    prerequisites: [sharepoint-onedrive]
+  employee-ai-usage:
+    spec_id: T49
+    phase: connectors
+    status: unimplemented
+    prerequisites: [copilot-audit]
+  connector-coverage-gate:
+    spec_id: T50
+    phase: connectors
+    status: unimplemented
+    prerequisites: [employee-ai-usage]
+  source-remediation:
+    spec_id: T51
+    phase: production-ops
+    status: unimplemented
+    prerequisites: [connector-coverage-gate]
+  policy-lifecycle:
+    spec_id: T52
+    phase: production-ops
+    status: unimplemented
+    prerequisites: [source-remediation]
+  customer-install-packaging:
+    spec_id: T53
+    phase: production-ops
+    status: unimplemented
+    prerequisites: [policy-lifecycle]
+  backup-restore:
+    spec_id: T54
+    phase: production-ops
+    status: unimplemented
+    prerequisites: [customer-install-packaging]
+  operational-telemetry:
+    spec_id: T55
+    phase: production-ops
+    status: unimplemented
+    prerequisites: [backup-restore]
+  pilot-readiness-gate:
+    spec_id: T56
+    phase: production-ops
+    status: unimplemented
+    prerequisites: [operational-telemetry]
+  performance-baseline:
+    spec_id: T57
+    phase: scale-release
+    status: unimplemented
+    prerequisites: [pilot-readiness-gate]
+  scan-worker-scale:
+    spec_id: T58
+    phase: scale-release
+    status: unimplemented
+    prerequisites: [performance-baseline]
+  catalog-query-optimize:
+    spec_id: T59
+    phase: scale-release
+    status: unimplemented
+    prerequisites: [scan-worker-scale]
+  runtime-path-optimize:
+    spec_id: T60
+    phase: scale-release
+    status: unimplemented
+    prerequisites: [catalog-query-optimize]
+  high-availability:
+    spec_id: T61
+    phase: scale-release
+    status: unimplemented
+    prerequisites: [runtime-path-optimize]
+  capacity-cost-model:
+    spec_id: T62
+    phase: scale-release
+    status: unimplemented
+    prerequisites: [high-availability]
+  soak-upgrade-recovery:
+    spec_id: T63
+    phase: scale-release
+    status: unimplemented
+    prerequisites: [capacity-cost-model]
+  verified-release:
+    spec_id: T64
+    phase: scale-release
+    status: unimplemented
+    prerequisites: [soak-upgrade-recovery]
+
+sentinels:
+  pass:
+    pytest_selectors: [tests/harness/sentinels/test_sentinel_pass.py]
+  fail:
+    pytest_selectors: [tests/harness/sentinels/test_sentinel_fail.py]
+  empty:
+    pytest_selectors: [tests/harness/sentinels/test_sentinel_empty.py]

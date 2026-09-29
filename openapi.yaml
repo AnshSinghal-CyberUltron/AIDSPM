@@ -1,0 +1,769 @@
+openapi: 3.1.1
+info:
+  title: ZeroShield AI DSPM Operator API
+  version: 0.1.0-draft
+  description: >-
+    Proposed contract for G0 and the G1 read-only posture MVP. G2 retrieval,
+    runtime enforcement, broad shadow-AI discovery and remediation are not
+    implemented or standardized by this file. Sensitive operations require
+    server-validated identity, membership and authorization.
+servers:
+  - url: /
+    description: Same-origin customer-hosted UI/API
+tags:
+  - name: system
+  - name: session
+  - name: sources
+  - name: scans
+  - name: assets
+  - name: findings
+  - name: ai-resources
+  - name: paths
+security:
+  - sessionCookie: []
+paths:
+  /livez:
+    get:
+      tags: [system]
+      operationId: getLiveness
+      summary: Process liveness without dependency or tenant detail
+      security: []
+      responses:
+        '200':
+          description: Process responds
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [status]
+                properties:
+                  status: {type: string, const: alive}
+  /readyz:
+    get:
+      tags: [system]
+      operationId: getReadiness
+      summary: Bounded database and migration readiness
+      security: []
+      responses:
+        '200':
+          description: Ready
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [status]
+                properties:
+                  status: {type: string, const: ready}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/system:
+    get:
+      tags: [system]
+      operationId: getSystem
+      summary: Persisted, non-sensitive installation state
+      security: []
+      responses:
+        '200':
+          description: Database-backed installation record
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/System'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/session:
+    get:
+      tags: [session]
+      operationId: getSession
+      summary: Current authenticated principal and selected verified membership
+      responses:
+        '200':
+          description: Session context for UI rendering, not a delegated credential
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Session'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/sources:
+    get:
+      tags: [sources]
+      operationId: listSources
+      summary: List registered sources in the selected tenant
+      parameters:
+        - {$ref: '#/components/parameters/Limit'}
+        - {$ref: '#/components/parameters/Cursor'}
+      responses:
+        '200':
+          description: Stable cursor page
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SourcePage'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      tags: [sources]
+      operationId: createSource
+      summary: Register one approved read-only local fixture scope
+      description: >-
+        G1 supports local_fixture only. Registration does not prove a successful scan.
+        Secret values and arbitrary filesystem paths are not accepted here.
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+        - {$ref: '#/components/parameters/CsrfToken'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SourceCreate'}
+      responses:
+        '201':
+          description: Source registered (or identical idempotent replay)
+          headers:
+            Location:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Source'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/sources/{source_id}:
+    parameters:
+      - {$ref: '#/components/parameters/SourceId'}
+    get:
+      tags: [sources]
+      operationId: getSource
+      summary: Source, capability declaration and current coverage
+      responses:
+        '200':
+          description: Source in selected tenant
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Source'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/sources/{source_id}/scans:
+    parameters:
+      - {$ref: '#/components/parameters/SourceId'}
+    post:
+      tags: [scans]
+      operationId: startScan
+      summary: Queue an idempotent read-only scan
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+        - {$ref: '#/components/parameters/CsrfToken'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ScanRequest'}
+      responses:
+        '202':
+          description: Durable job queued, not completed
+          headers:
+            Location:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Scan'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/scans/{scan_id}:
+    parameters:
+      - {$ref: '#/components/parameters/ScanId'}
+    get:
+      tags: [scans]
+      operationId: getScan
+      summary: Job state and honest coverage counts
+      responses:
+        '200':
+          description: Current job state
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Scan'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/scans/{scan_id}/cancel:
+    parameters:
+      - {$ref: '#/components/parameters/ScanId'}
+    post:
+      tags: [scans]
+      operationId: requestScanCancellation
+      summary: Request cancellation; worker must acknowledge a terminal state
+      parameters:
+        - {$ref: '#/components/parameters/CsrfToken'}
+      responses:
+        '202':
+          description: Cancellation requested; execution might still be in flight
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Scan'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/scans/{scan_id}/outcomes:
+    parameters:
+      - {$ref: '#/components/parameters/ScanId'}
+    get:
+      tags: [scans]
+      operationId: listScanOutcomes
+      summary: Per-item inspection result without raw source content
+      parameters:
+        - {$ref: '#/components/parameters/Limit'}
+        - {$ref: '#/components/parameters/Cursor'}
+      responses:
+        '200':
+          description: Outcomes, including failures and unsupported items
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OutcomePage'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/assets:
+    get:
+      tags: [assets]
+      operationId: listAssets
+      summary: Asset catalog with evidence and current scan status
+      parameters:
+        - {$ref: '#/components/parameters/Limit'}
+        - {$ref: '#/components/parameters/Cursor'}
+        - name: source_id
+          in: query
+          schema: {type: string, format: uuid}
+        - name: lifecycle
+          in: query
+          schema: {type: string, enum: [active, deleted]}
+      responses:
+        '200':
+          description: Asset page
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AssetPage'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/assets/{asset_id}:
+    parameters:
+      - {$ref: '#/components/parameters/AssetId'}
+    get:
+      tags: [assets]
+      operationId: getAsset
+      summary: Masked current asset and version references
+      responses:
+        '200':
+          description: Asset
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Asset'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/findings:
+    get:
+      tags: [findings]
+      operationId: listFindings
+      summary: Deduplicated findings and bounded masked evidence references
+      parameters:
+        - {$ref: '#/components/parameters/Limit'}
+        - {$ref: '#/components/parameters/Cursor'}
+        - name: status
+          in: query
+          schema: {type: string, enum: [open, triaged, accepted_risk, remediating, resolved, suppressed]}
+        - name: severity
+          in: query
+          schema: {type: string, enum: [critical, high, medium, low, info]}
+      responses:
+        '200':
+          description: Finding page
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FindingPage'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/findings/{finding_id}:
+    parameters:
+      - {$ref: '#/components/parameters/FindingId'}
+    get:
+      tags: [findings]
+      operationId: getFinding
+      summary: One finding with evidence references and limitations
+      responses:
+        '200':
+          description: Finding
+          headers:
+            ETag:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Finding'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/findings/{finding_id}/workflow:
+    parameters:
+      - {$ref: '#/components/parameters/FindingId'}
+    patch:
+      tags: [findings]
+      operationId: updateFindingWorkflow
+      summary: Analyst workflow; cannot assert verification without a real check
+      parameters:
+        - {$ref: '#/components/parameters/CsrfToken'}
+        - name: If-Match
+          in: header
+          required: true
+          schema: {type: string, pattern: '^"[1-9][0-9]*"$'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/FindingWorkflowChange'}
+      responses:
+        '200':
+          description: Updated workflow state
+          headers:
+            ETag:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Finding'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '428': {$ref: '#/components/responses/PreconditionRequired'}
+  /api/v1/ai-resources:
+    get:
+      tags: [ai-resources]
+      operationId: listAiResources
+      summary: Declared AI resources only for G1
+      parameters:
+        - {$ref: '#/components/parameters/Limit'}
+        - {$ref: '#/components/parameters/Cursor'}
+      responses:
+        '200':
+          description: Declared resources; no universal discovery claim
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AiResourcePage'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+    post:
+      tags: [ai-resources]
+      operationId: registerAiResource
+      summary: Register an operator-declared AI application or agent
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+        - {$ref: '#/components/parameters/CsrfToken'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AiResourceCreate'}
+      responses:
+        '201':
+          description: Declaration recorded, not observed or verified
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AiResource'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/access-paths:
+    get:
+      tags: [paths]
+      operationId: listAccessPaths
+      summary: Bounded evidence paths; G1 paths are declared, not effective access
+      parameters:
+        - name: from_ai_resource_id
+          in: query
+          required: true
+          schema: {type: string, format: uuid}
+        - name: to_asset_id
+          in: query
+          schema: {type: string, format: uuid}
+        - name: max_depth
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 4, default: 3}
+      responses:
+        '200':
+          description: Capped path set; truncation and unknown edges explicit
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AccessPathResult'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: zs_session
+      description: Opaque HttpOnly Secure SameSite session; identity established via OIDC.
+  parameters:
+    SourceId:
+      name: source_id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    ScanId:
+      name: scan_id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    AssetId:
+      name: asset_id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    FindingId:
+      name: finding_id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    Limit:
+      name: limit
+      in: query
+      schema: {type: integer, minimum: 1, maximum: 100, default: 50}
+    Cursor:
+      name: cursor
+      in: query
+      schema: {type: string, minLength: 8, maxLength: 2048}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, minLength: 16, maxLength: 128}
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      schema: {type: string, minLength: 16, maxLength: 512}
+  responses:
+    BadRequest:
+      description: Invalid scope, filter or malformed input
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Unauthenticated:
+      description: No usable browser session
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Forbidden:
+      description: Authenticated but disallowed action
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    NotFound:
+      description: Unknown or cross-tenant object; indistinguishable to caller
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Conflict:
+      description: Conflicting idempotency payload or stale version
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    PreconditionRequired:
+      description: Required If-Match version absent
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Unavailable:
+      description: Required dependency unavailable; no false ready or allowed state
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+  schemas:
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message, request_id]
+          properties:
+            code: {type: string, pattern: '^[A-Z_]+$'}
+            message: {type: string, maxLength: 500}
+            request_id: {type: string, format: uuid}
+            details: {type: object, additionalProperties: true}
+    System:
+      type: object
+      additionalProperties: false
+      required: [installation_id, build_revision, server_time, database]
+      properties:
+        installation_id: {type: string, format: uuid}
+        build_revision: {type: string}
+        server_time: {type: string, format: date-time}
+        database: {type: string, const: ready}
+    Session:
+      type: object
+      additionalProperties: false
+      required: [schema_version, user_id, selected_tenant_id, roles, permissions, expires_at]
+      properties:
+        schema_version: {type: integer, const: 1}
+        user_id: {type: string, format: uuid}
+        selected_tenant_id: {type: string, format: uuid}
+        display_name: {type: string, maxLength: 120}
+        roles:
+          type: array
+          items: {type: string, enum: [admin, analyst, viewer, remediation_approver]}
+        permissions:
+          type: array
+          items: {type: string}
+        expires_at: {type: string, format: date-time}
+    Capability:
+      type: object
+      additionalProperties: false
+      required: [contract_version, can_enumerate, can_read_content, can_read_acl, can_write]
+      properties:
+        contract_version: {type: string}
+        can_enumerate: {type: boolean}
+        can_read_content: {type: boolean}
+        can_read_acl: {type: boolean}
+        can_write: {type: boolean, const: false}
+        limitations:
+          type: array
+          items: {type: string, maxLength: 500}
+    Coverage:
+      type: object
+      additionalProperties: false
+      required: [state, enumeration_complete, inspection_complete, inspected, failed, unsupported, limitations]
+      properties:
+        state: {type: string, enum: [not_scanned, complete, partial, stale, failed, unsupported]}
+        enumeration_complete: {type: boolean}
+        inspection_complete: {type: boolean}
+        eligible: {type: [integer, 'null'], minimum: 0, description: Null when enumeration is incomplete}
+        inspected: {type: integer, minimum: 0}
+        failed: {type: integer, minimum: 0}
+        unsupported: {type: integer, minimum: 0}
+        last_successful_scan_at: {type: [string, 'null'], format: date-time}
+        limitations:
+          type: array
+          items: {type: string, maxLength: 500}
+    SourceCreate:
+      type: object
+      additionalProperties: false
+      required: [display_name, connector_type, approved_scope_ref]
+      properties:
+        display_name: {type: string, minLength: 1, maxLength: 120}
+        connector_type: {type: string, const: local_fixture}
+        approved_scope_ref:
+          type: string
+          pattern: '^fixture:[a-z0-9][a-z0-9_-]{0,63}$'
+          description: Server-side allowlisted fixture identifier, not a raw path.
+    Source:
+      type: object
+      additionalProperties: false
+      required: [schema_version, id, display_name, connector_type, approved_scope_ref, state, capability, coverage, created_at]
+      properties:
+        schema_version: {type: integer, const: 1}
+        id: {type: string, format: uuid}
+        display_name: {type: string}
+        connector_type: {type: string, const: local_fixture}
+        approved_scope_ref: {type: string}
+        state: {type: string, enum: [enabled, disabled]}
+        capability: {$ref: '#/components/schemas/Capability'}
+        coverage: {$ref: '#/components/schemas/Coverage'}
+        created_at: {type: string, format: date-time}
+    ScanRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason: {type: string, maxLength: 200}
+    Scan:
+      type: object
+      additionalProperties: false
+      required: [schema_version, id, source_id, status, coverage, queued_at]
+      properties:
+        schema_version: {type: integer, const: 1}
+        id: {type: string, format: uuid}
+        source_id: {type: string, format: uuid}
+        status: {type: string, enum: [queued, running, cancel_requested, completed, partial, failed, cancelled]}
+        coverage: {$ref: '#/components/schemas/Coverage'}
+        queued_at: {type: string, format: date-time}
+        started_at: {type: [string, 'null'], format: date-time}
+        finished_at: {type: [string, 'null'], format: date-time}
+        error_code: {type: [string, 'null']}
+    ScanOutcome:
+      type: object
+      additionalProperties: false
+      required: [id, scan_id, status, reason_code]
+      properties:
+        id: {type: string, format: uuid}
+        scan_id: {type: string, format: uuid}
+        asset_id: {type: [string, 'null'], format: uuid}
+        status: {type: string, enum: [inspected, failed, unsupported, skipped]}
+        reason_code: {type: string, maxLength: 80}
+        observed_at: {type: string, format: date-time}
+    Classification:
+      type: object
+      additionalProperties: false
+      required: [label, detector_version, evidence_id]
+      properties:
+        label: {type: string, enum: [public, internal, confidential, regulated]}
+        detector_version: {type: string}
+        detector_score: {type: [number, 'null'], minimum: 0, maximum: 1}
+        evidence_id: {type: string, format: uuid}
+    Asset:
+      type: object
+      additionalProperties: false
+      required: [schema_version, id, source_id, type, lifecycle, display_name_masked, first_seen_at, last_seen_at, classifications, coverage]
+      properties:
+        schema_version: {type: integer, const: 1}
+        id: {type: string, format: uuid}
+        source_id: {type: string, format: uuid}
+        type: {type: string, enum: [file, rowset, collection]}
+        lifecycle: {type: string, enum: [active, deleted]}
+        display_name_masked: {type: string, maxLength: 200}
+        current_version_id: {type: [string, 'null'], format: uuid}
+        first_seen_at: {type: string, format: date-time}
+        last_seen_at: {type: string, format: date-time}
+        classifications:
+          type: array
+          items: {$ref: '#/components/schemas/Classification'}
+        coverage: {$ref: '#/components/schemas/Coverage'}
+    EvidenceRef:
+      type: object
+      additionalProperties: false
+      required: [id, kind, collected_at, origin, limitations]
+      properties:
+        id: {type: string, format: uuid}
+        kind: {type: string, enum: [declared, observed, source_verified, unknown]}
+        origin: {type: string, maxLength: 120}
+        collected_at: {type: string, format: date-time}
+        expires_at: {type: [string, 'null'], format: date-time}
+        limitations:
+          type: array
+          items: {type: string, maxLength: 500}
+    Finding:
+      type: object
+      additionalProperties: false
+      required: [schema_version, id, type, title, severity, status, version, first_seen_at, last_seen_at, evidence, limitations]
+      properties:
+        schema_version: {type: integer, const: 1}
+        id: {type: string, format: uuid}
+        type: {type: string, maxLength: 80}
+        title: {type: string, maxLength: 200}
+        severity: {type: string, enum: [critical, high, medium, low, info]}
+        status: {type: string, enum: [open, triaged, accepted_risk, remediating, resolved, suppressed]}
+        version: {type: integer, minimum: 1}
+        rationale_masked: {type: string, maxLength: 2000}
+        first_seen_at: {type: string, format: date-time}
+        last_seen_at: {type: string, format: date-time}
+        evidence:
+          type: array
+          items: {$ref: '#/components/schemas/EvidenceRef'}
+        limitations:
+          type: array
+          items: {type: string, maxLength: 500}
+    FindingWorkflowChange:
+      type: object
+      additionalProperties: false
+      required: [status, reason]
+      properties:
+        status: {type: string, enum: [triaged, accepted_risk, remediating, suppressed]}
+        reason: {type: string, minLength: 8, maxLength: 1000}
+        suppression_expires_at: {type: [string, 'null'], format: date-time}
+    AiResourceCreate:
+      type: object
+      additionalProperties: false
+      required: [name, kind, owner, purpose]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+        kind: {type: string, enum: [application, agent, rag_index, mcp_server, model_endpoint]}
+        owner: {type: string, minLength: 1, maxLength: 120}
+        purpose: {type: string, minLength: 1, maxLength: 500}
+    AiResource:
+      type: object
+      additionalProperties: false
+      required: [schema_version, id, name, kind, owner, purpose, approval, lifecycle, evidence]
+      properties:
+        schema_version: {type: integer, const: 1}
+        id: {type: string, format: uuid}
+        name: {type: string}
+        kind: {type: string, enum: [application, agent, rag_index, mcp_server, model_endpoint]}
+        owner: {type: string}
+        purpose: {type: string}
+        approval: {type: string, enum: [pending_review, approved, prohibited, exception, unknown]}
+        lifecycle: {type: string, enum: [candidate, configured, deployed, observed_active, inactive, retired]}
+        evidence:
+          type: array
+          items: {$ref: '#/components/schemas/EvidenceRef'}
+    AccessEdge:
+      type: object
+      additionalProperties: false
+      required: [from_id, to_id, relation, decision, evidence]
+      properties:
+        from_id: {type: string, format: uuid}
+        to_id: {type: string, format: uuid}
+        relation: {type: string, maxLength: 80}
+        decision: {type: string, enum: [allowed, denied, unknown]}
+        evidence: {$ref: '#/components/schemas/EvidenceRef'}
+    AccessPathResult:
+      type: object
+      additionalProperties: false
+      required: [schema_version, paths, truncated, evaluated_at, limitations]
+      properties:
+        schema_version: {type: integer, const: 1}
+        paths:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required: [edges, decision]
+            properties:
+              edges:
+                type: array
+                maxItems: 4
+                items: {$ref: '#/components/schemas/AccessEdge'}
+              decision: {type: string, enum: [allowed, denied, unknown]}
+        truncated: {type: boolean}
+        evaluated_at: {type: string, format: date-time}
+        limitations:
+          type: array
+          items: {type: string, maxLength: 500}
+    SourcePage:
+      type: object
+      additionalProperties: false
+      required: [schema_version, items, next_cursor]
+      properties:
+        schema_version: {type: integer, const: 1}
+        items: {type: array, items: {$ref: '#/components/schemas/Source'}}
+        next_cursor: {type: [string, 'null']}
+    OutcomePage:
+      type: object
+      additionalProperties: false
+      required: [schema_version, items, next_cursor]
+      properties:
+        schema_version: {type: integer, const: 1}
+        items: {type: array, items: {$ref: '#/components/schemas/ScanOutcome'}}
+        next_cursor: {type: [string, 'null']}
+    AssetPage:
+      type: object
+      additionalProperties: false
+      required: [schema_version, items, next_cursor]
+      properties:
+        schema_version: {type: integer, const: 1}
+        items: {type: array, items: {$ref: '#/components/schemas/Asset'}}
+        next_cursor: {type: [string, 'null']}
+    FindingPage:
+      type: object
+      additionalProperties: false
+      required: [schema_version, items, next_cursor]
+      properties:
+        schema_version: {type: integer, const: 1}
+        items: {type: array, items: {$ref: '#/components/schemas/Finding'}}
+        next_cursor: {type: [string, 'null']}
+    AiResourcePage:
+      type: object
+      additionalProperties: false
+      required: [schema_version, items, next_cursor]
+      properties:
+        schema_version: {type: integer, const: 1}
+        items: {type: array, items: {$ref: '#/components/schemas/AiResource'}}
+        next_cursor: {type: [string, 'null']}

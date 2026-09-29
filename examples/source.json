@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "id": "8a52dbbe-1a4d-4a16-a420-5a814acac187",
+  "display_name": "Synthetic payroll fixture",
+  "connector_type": "local_fixture",
+  "approved_scope_ref": "fixture:payroll_lab",
+  "state": "enabled",
+  "capability": {
+    "contract_version": "local-fixture-1",
+    "can_enumerate": true,
+    "can_read_content": true,
+    "can_read_acl": false,
+    "can_write": false,
+    "limitations": ["No source ACL verification in this connector"]
+  },
+  "coverage": {
+    "state": "not_scanned",
+    "enumeration_complete": false,
+    "inspection_complete": false,
+    "eligible": null,
+    "inspected": 0,
+    "failed": 0,
+    "unsupported": 0,
+    "last_successful_scan_at": null,
+    "limitations": ["No scan has completed"]
+  },
+  "created_at": "2026-09-29T03:55:00Z"
+}
+

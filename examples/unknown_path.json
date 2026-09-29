@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "paths": [
+    {
+      "edges": [
+        {
+          "from_id": "c8d8ccbd-42db-4680-a15b-5ef1016a0b59",
+          "to_id": "bb52fb4a-cd61-48bd-b8e1-19ad9708473a",
+          "relation": "declared_uses_source",
+          "decision": "unknown",
+          "evidence": {
+            "id": "ec4b3c3f-43c9-499b-b7de-92033ad0bccc",
+            "kind": "declared",
+            "origin": "operator registration",
+            "collected_at": "2026-09-29T03:59:00Z",
+            "expires_at": null,
+            "limitations": ["No source ACL evaluation"]
+          }
+        }
+      ],
+      "decision": "unknown"
+    }
+  ],
+  "truncated": false,
+  "evaluated_at": "2026-09-29T04:00:20Z",
+  "limitations": ["Declared path only; effective access is not established"]
+}
+

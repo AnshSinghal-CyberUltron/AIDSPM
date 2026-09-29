@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "e86c7c52-250c-452e-9c43-d933643e9412",
+  "source_id": "8a52dbbe-1a4d-4a16-a420-5a814acac187",
+  "status": "partial",
+  "coverage": {
+    "state": "partial",
+    "enumeration_complete": false,
+    "inspection_complete": false,
+    "eligible": null,
+    "inspected": 2,
+    "failed": 1,
+    "unsupported": 1,
+    "last_successful_scan_at": null,
+    "limitations": ["Listing stopped after a cursor timeout; unseen assets retain their previous lifecycle state"]
+  },
+  "queued_at": "2026-09-29T04:00:00Z",
+  "started_at": "2026-09-29T04:00:01Z",
+  "finished_at": "2026-09-29T04:00:15Z",
+  "error_code": "SOURCE_LIST_TIMEOUT"
+}
+

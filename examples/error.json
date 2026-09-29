@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "DEPENDENCY_UNAVAILABLE",
+    "message": "The catalog is temporarily unavailable.",
+    "request_id": "d90ee57d-0870-4918-8391-76020903d20d",
+    "details": {}
+  }
+}

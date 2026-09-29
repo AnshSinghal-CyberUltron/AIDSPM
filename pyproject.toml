@@ -1,0 +1,51 @@
+[project]
+name = "ai-dspm"
+version = "0.1.0"
+description = "Customer-hosted AI DSPM"
+requires-python = "==3.12.*"
+readme = "docs/capabilities/mvp.md"
+license = { text = "proprietary-customer-hosted" }
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = [
+  "apps/api",
+  "packages/domain",
+  "packages/connectors",
+  "packages/processing",
+  "packages/runtime",
+  "workers",
+]
+
+[dependency-groups]
+dev = [
+  "ruff==0.16.8",
+  "mypy==2.3.1",
+  "pytest==9.1.1",
+  "pyyaml==6.0.2",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["apps", "packages", "workers", "scripts", "tests"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = [
+  "ai_dspm_api",
+  "ai_dspm_domain",
+  "ai_dspm_connectors",
+  "ai_dspm_processing",
+  "ai_dspm_runtime",
+  "ai_dspm_workers",
+]
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["scripts"]
+norecursedirs = ["sentinels"]

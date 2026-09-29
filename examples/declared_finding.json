@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "259ee032-5f8a-4a74-973b-527d4cb9ad7a",
+  "type": "declared_sensitive_source_binding",
+  "title": "Declared HR bot binding to a regulated source",
+  "severity": "medium",
+  "status": "open",
+  "version": 1,
+  "rationale_masked": "A declared AI application binding points to a source containing a regulated synthetic field. Effective access has not been tested.",
+  "first_seen_at": "2026-09-29T04:00:15Z",
+  "last_seen_at": "2026-09-29T04:00:15Z",
+  "evidence": [
+    {
+      "id": "ec4b3c3f-43c9-499b-b7de-92033ad0bccc",
+      "kind": "declared",
+      "origin": "operator registration",
+      "collected_at": "2026-09-29T03:59:00Z",
+      "expires_at": null,
+      "limitations": ["No source ACL verification", "No model invocation observation"]
+    }
+  ],
+  "limitations": ["G1 posture signal; not proof that any user or agent retrieved the data"]
+}
+

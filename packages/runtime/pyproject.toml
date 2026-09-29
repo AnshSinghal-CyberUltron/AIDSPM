@@ -1,0 +1,15 @@
+[project]
+name = "ai-dspm-runtime"
+version = "0.1.0"
+requires-python = "==3.12.*"
+dependencies = ["ai-dspm-domain"]
+
+[tool.uv.sources]
+ai-dspm-domain = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_dspm_runtime"]

@@ -1,0 +1,7 @@
+# Synthetic redaction canaries. Not real people, not real keys.
+alice.hr@example.com
+bob.eng@example.com
+payroll-canary-128000
+AKIAIOSFODNN7EXAMPLE
+sk_test_51FakeCanaryDoNotLog
+hr-bot-canary-token
