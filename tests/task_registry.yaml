@@ -32,7 +32,7 @@ checks:
   toolchain:
     spec_id: T02
     phase: foundations
-    status: runnable
+    status: Verified
     prerequisites: [product-contract]
     frontend: not_applicable
     profiles: []
