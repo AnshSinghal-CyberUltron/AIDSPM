@@ -6,7 +6,7 @@ import hashlib
 import json
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -72,7 +72,7 @@ def copy_sanitized(src: Path, dst: Path) -> str:
 
 
 def new_run_id() -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return now.strftime("%Y%m%dT%H%M%S") + f"{now.microsecond:06d}Z-" + uuid.uuid4().hex[:8]
 
 
@@ -90,7 +90,7 @@ def write_run_identity(run_id: str, check: str) -> Path:
             "check": check,
             "compose_project": compose_project_name(run_id),
             "compose_started": False,
-            "created_at_utc": datetime.now(timezone.utc).isoformat(),
+            "created_at_utc": datetime.now(UTC).isoformat(),
         }
     )
     (run_dir / "compose-project.json").write_text(json.dumps(identity, indent=2) + "\n")

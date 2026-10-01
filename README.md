@@ -4,6 +4,37 @@ This package is for **you to implement**, then sync to GitHub for code review. I
 first real read-only posture MVP in depth and reserves later product layers. No route or
 database table in this package is proof that the corresponding product feature works.
 
+
+
+## Development toolchain
+
+Supported local tools are pinned. `scripts/doctor.py` rejects a different Node or pnpm major.
+
+| Tool           | Pin                                                                                | How to invoke it                                                          |
+| -------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Python         | 3.12.14                                                                            | `uv run --python 3.12`                                                  |
+| uv             | 0.11.26 on the developer machine;`0.12.15` digest inside `apps/api/Dockerfile` | `uv lock --check` then `uv sync --frozen --all-packages --group dev`  |
+| Node           | 24.21.0                                                                            | `node` on `PATH`, matching `apps/web/package.json` `engines`      |
+| pnpm           | 12.4.2                                                                             | `corepack prepare pnpm@12.4.2 --activate`, then `pnpm --dir apps/web` |
+| Docker Compose | Compose v2 with the Docker CLI                                                     | `docker compose`                                                        |
+
+Image digests live in `ops/images.lock.json`. Python, Node, Nginx, and uv are digest-pinned in the Dockerfiles. This repository has built `ai-dspm-api:dev` and `ai-dspm-web:dev` on linux/amd64. The linux/arm64 digests in the lock file are recorded and have not been built on that architecture.
+
+Do not put database passwords, admin passwords, or `AIDSPM_DEV_TOKEN` values in `.env.example`. Real values stay in an untracked `.env`.
+
+Checks:
+
+```bash
+uv lock --check
+uv sync --frozen --all-packages --group dev
+pnpm --dir apps/web install --frozen-lockfile
+make lint
+make typecheck
+uv run --python 3.12 python scripts/validate_contract.py
+uv run --python 3.12 pytest tests/harness -q
+make build
+```
+
 ## Read in this order
 
 1. [`API_GUIDE.md`](API_GUIDE.md): behaviors, permission matrix, examples, release order.

@@ -52,6 +52,15 @@
           "linux/amd64": "sha256:e5e169f6ef82b06d2f5b08e9ac80e6a6335900360f0767e04d6810a9b4bc3590",
           "linux/arm64": "sha256:f40c526f2fcd7dd7200a00ec21dd218fb048588b23735601b3b82e2c2a98e788"
         }
+      },
+      "nginx": {
+        "name": "nginx",
+        "tag": "1.28-bookworm",
+        "index_digest": "sha256:552e7481ca93ffccd046aa658dbbed22caefbc09c66fa7cd247cbb90b8a5c609",
+        "platforms": {
+          "linux/amd64": "sha256:552e7481ca93ffccd046aa658dbbed22caefbc09c66fa7cd247cbb90b8a5c609",
+          "linux/arm64": "sha256:552e7481ca93ffccd046aa658dbbed22caefbc09c66fa7cd247cbb90b8a5c609"
+        }
       }
     }
   }

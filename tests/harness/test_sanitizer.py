@@ -8,7 +8,6 @@ Returns:
     The sanitized text.
 """
 
-from pathlib import Path
 
 from evidence import sanitize_text
 

@@ -1,0 +1,60 @@
+name: toolchain
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.14"
+
+      - name: Setup UV
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.11.26"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.21.0"
+
+      - name: Pin pnpm
+        run: corepack enable && corepack prepare pnpm@12.4.2 --activate
+
+      - name: Record commit and tool versions
+        run: |
+          echo "commit=$(git rev-parse HEAD)"
+          python --version
+          uv --version
+          node --version
+          pnpm --version
+
+      - name: Frozen Python lock
+        run: |
+          uv lock --check
+          uv sync --frozen --all-packages --group dev
+
+      - name: Frozen JavaScript lock
+        run: pnpm --dir apps/web install --frozen-lockfile
+
+      - name: Lint
+        run: |
+          uv run --python 3.12 ruff check apps packages workers scripts tests
+          pnpm --dir apps/web exec tsc -b --pretty false
+
+      - name: Typecheck
+        run: uv run --python 3.12 mypy
+
+      - name: Contract
+        run: uv run --python 3.12 python scripts/validate_contract.py
+
+      - name: Harness tests
+        run: uv run --python 3.12 pytest tests/harness -q
