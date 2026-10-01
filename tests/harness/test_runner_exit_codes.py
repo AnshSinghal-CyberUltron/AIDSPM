@@ -21,6 +21,7 @@ def invoke(*args: str) -> subprocess.CompletedProcess[str]:
         cwd=ROOT,
         text=True,
         capture_output=True,
+        check=False,
     )
 
 

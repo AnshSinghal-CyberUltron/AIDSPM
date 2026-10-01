@@ -89,7 +89,7 @@ def check_example(value, schema, spec, path="$", depth=0):
         if schema.get("format") == "uuid":
             UUID(value)
         if schema.get("format") == "date-time":
-            datetime.fromisoformat(value.replace("Z", "+00:00"))
+            datetime.fromisoformat(value)
         if "pattern" in schema:
             assert re.search(schema["pattern"], value), (path, "pattern")
         if "maxLength" in schema:

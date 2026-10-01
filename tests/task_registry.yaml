@@ -64,9 +64,17 @@ checks:
   first-live-stack:
     spec_id: T04
     phase: foundations
-    status: unimplemented
+    status: runnable
     prerequisites: [verify-harness]
     frontend: required_later
+    profiles: []
+    pytest_selectors: []
+    required_files:
+      - apps/api/Dockerfile
+      - apps/web/Dockerfile
+      - apps/api/src/ai_dspm_api/main.py
+      - ops/compose/compose.yml
+    command: python scripts/live_stack.py
   catalog-tenant-isolation:
     spec_id: T05
     phase: foundations

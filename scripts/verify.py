@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -13,10 +11,9 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from evidence import (  # noqa: E402
+from evidence import (
     compose_project_name,
     new_run_id,
-    sha256_file,
     write_manifest,
     write_run_identity,
 )
@@ -44,7 +41,7 @@ def run(cmd: list[str], env: dict | None = None) -> subprocess.CompletedProcess[
     Returns:
         The completed process.
     """
-    return subprocess.run(cmd, cwd=ROOT, text=True, capture_output=True, env=env)
+    return subprocess.run(cmd, cwd=ROOT, text=True, capture_output=True, env=env, check=False)
 
 
 
@@ -138,10 +135,15 @@ def verify_check(name: str) -> int:
     if name == "product-contract":
         return verify_product_contract()
     if name == "toolchain":
-        doctor = run(["make", "doctor"])
-        sys.stdout.write(doctor.stdout)
-        sys.stderr.write(doctor.stderr)
-        return PASS if doctor.returncode == 0 else FAIL
+        command = spec.get("command") or "make doctor"
+        proc = run(["bash", "-lc", command])
+        sys.stdout.write(proc.stdout)
+        sys.stderr.write(proc.stderr)
+        return PASS if proc.returncode == 0 else FAIL
+    if name == "first-live-stack":
+        from live_stack import prove
+
+        return PASS if prove() == 0 else FAIL
     if name == "verify-harness":
         return pytest_status(spec["pytest_selectors"])
     selectors = spec.get("pytest_selectors") or []
@@ -182,30 +184,39 @@ def cmd_verify(check: str) -> int:
 
 
 
-def cmd_gate(phase: str) -> int:
-    """
-    cmd_gate is used to run all the checks in a given phase.
-    It loads the registry, finds all the checks in the given phase that are runnable,
-    and then runs each check.
-    It returns the worst status of the checks.
-    """
+def phase_checks(phase: str) -> tuple[list[str], list[str]]:
+    """Return runnable names and unimplemented names for a phase."""
     registry = load_registry()
-    runnable = [
-        name
-        for name, spec in registry["checks"].items()
-        if spec.get("phase") == phase and spec.get("status") == "runnable"
-    ]
-    if not runnable:
-        print(f"no runnable checks in phase {phase}")
+    runnable: list[str] = []
+    pending: list[str] = []
+    for name, spec in registry["checks"].items():
+        if spec.get("phase") != phase:
+            continue
+        if spec.get("status") == "runnable":
+            runnable.append(name)
+        else:
+            pending.append(name)
+    return runnable, pending
+
+
+def cmd_gate(phase: str) -> int:
+    """Run every runnable check. Unimplemented checks in the phase are not a pass."""
+    runnable, pending = phase_checks(phase)
+    if not runnable and not pending:
+        print(f"no checks in phase {phase}")
         return UNIMPLEMENTED
+    for name in pending:
+        print(f"INCOMPLETE {name}")
     worst = PASS
     for name in runnable:
         print(f"== {name} ==")
         code = cmd_verify(name)
+        if code == FAIL:
+            return FAIL
         if code != PASS:
-            worst = code if worst == PASS else worst
-            if code == FAIL:
-                return FAIL
+            worst = code
+    if pending:
+        return UNIMPLEMENTED
     return worst
 
 
